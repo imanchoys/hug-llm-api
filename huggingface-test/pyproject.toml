@@ -1,0 +1,16 @@
+[project]
+name = ""
+version = ""
+description = ""
+authors = [
+    {name = "Anna Krayushkina", email = "example@example.com"},
+]
+dependencies = [
+    "requests>=2.31.0",
+    "wikipedia-api>=0.6.0",
+    "python-dotenv>=1.0.0",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
