@@ -31,15 +31,15 @@ app.add_middleware(
 )
 
 
-def get_pipeline(hf_access_token: str, model_id: str) -> StDiffPipelineT | None:
+def get_pipeline(HF_access_token: str, model_id: str) -> StDiffPipelineT | None:
     """
-    Set parameters and get the StDiff pipeline from diffusers
+    Set parameters and get the stable diffusion pipeline
     """
     pl = StableDiffusionPipeline.from_pretrained(
         model_id,
         revision="fp16",
         torch_dtype=torch.float16,
-        use_auth_token=hf_access_token
+        use_auth_token=HF_access_token
     )
 
     print(f"Pipeline for '{model_id}'", type(pl))
