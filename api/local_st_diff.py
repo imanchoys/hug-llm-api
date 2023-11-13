@@ -1,7 +1,6 @@
-import hashlib
-import datetime
 import base64
 import torch
+from utils import get_image_name
 from torch import autocast
 from diffusers import StableDiffusionPipeline
 # the line below is for the sake if type annotation of pipeline
@@ -12,7 +11,7 @@ from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from io import BytesIO
 # from typing import Any
-# TODO: use environment variable
+# TODO: use environment variable instead of `_secrets.py`
 from _secrets import TOKEN_HUGGINGFACE
 
 _DEVICE = "cuda"
@@ -27,15 +26,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-
-
-def get_image_name(key: str, file_extension: str = "png") -> str:
-    # Get the current timestamp in a human-readable format
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    # Combine the timestamp with the key and generate a unique hash
-    unique_hash = hashlib.sha256(f"{timestamp}_{key}".encode()).hexdigest()
-    return f"{timestamp}_{unique_hash}.{file_extension}"
 
 
 def get_pipeline(hf_access_token: str, model_id: str) -> StDiffPipelineT | None:
@@ -68,7 +58,7 @@ pipe.to(_DEVICE)
 def generate(prompt: str):
     with autocast(_DEVICE):
         image = pipe(prompt, guidance_scale=8.5).images[0]
-        image.save(get_image_name("user-00", "png"))
+        image.save(get_image_name(key="user0", file_extension="png"))
         buffer = BytesIO()
         image.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue())
