@@ -1,6 +1,9 @@
 from diffusers import AutoPipelineForText2Image
 import torch
 
+if not torch.cuda.is_available():
+    raise RuntimeError("Could not run this model without CUDA")
+
 pipe = AutoPipelineForText2Image.from_pretrained(
     "kandinsky-community/kandinsky-2-2-decoder",
     torch_dtype=torch.float16

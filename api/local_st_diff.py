@@ -15,6 +15,9 @@ from io import BytesIO
 from _secrets import TOKEN_HUGGINGFACE
 
 _DEVICE = "cuda"
+if not torch.cuda.is_available():
+    raise RuntimeError("Could not run this model without CUDA")
+
 _MODEL = "CompVis/stable-diffusion-v1-4"
 
 app = FastAPI()
