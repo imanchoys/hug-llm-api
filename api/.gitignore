@@ -1,1 +1,5 @@
+# temp solution for tokens
 _secrets.py
+
+# file where all data for RAG should be placed
+rag_data/
