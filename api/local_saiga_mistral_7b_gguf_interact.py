@@ -1,11 +1,29 @@
-# import fire
+# Credits to the creators of Saiga Mistral 7b model (cc-by-4.0): https://huggingface.co/IlyaGusev/saiga_mistral_7b_lora
+# > Saiga Mistral 7b is itself based on Mistral OpenOrca (cc-by-4.0): https://huggingface.co/Open-Orca/Mistral-7B-OpenOrca
+# Llama.cpp version (apache-2.0): https://huggingface.co/IlyaGusev/saiga_mistral_7b_gguf 
+
+# This demo works with llama.cpp python bindings >= 0.1.79 - it expects model GGUF format:
+#   - to install: `pip install llama-cpp-python`
 from llama_cpp import Llama
 
+# Saiga-Mistral-7b specific format tokens 
 SYSTEM_PROMPT = "Ты — Сайга, русскоязычный автоматический ассистент. Ты разговариваешь с людьми и помогаешь им."
 SYSTEM_TOKEN = 1587
 USER_TOKEN = 2188
 BOT_TOKEN = 12435
 LINE_BREAK_TOKEN = 13
+
+# WARNING: to run this demo you must download (or pre-download before running)
+# the ".gguf" model file from huggingface:
+#   - https://huggingface.co/IlyaGusev/saiga_mistral_7b_gguf/resolve/main/model-q2_K.gguf (~3.08 GB)
+#   - https://huggingface.co/IlyaGusev/saiga_mistral_7b_gguf/resolve/main/model-q4_K.gguf (~4.37 GB)
+#   - https://huggingface.co/IlyaGusev/saiga_mistral_7b_gguf/resolve/main/model-q8_0.gguf (~7.7 GB)
+# > 10GB RAM for q8_0 and less for smaller quantizations
+
+# to pre-download simply run:
+# ```bash
+# wget https://huggingface.co/IlyaGusev/saiga_mistral_7b_gguf/resolve/main/model-q4_K.gguf
+# ```
 
 # path for .gguf model file (could be either run on CPUs or GPUs)
 PATH_TO_GGUF = "./models_dir/saiga_mistral_7b/model-q4_K.gguf"
