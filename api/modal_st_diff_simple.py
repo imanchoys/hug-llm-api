@@ -43,13 +43,13 @@ def download_models():
 image = (
     Image.debian_slim(python_version="3.10")  # local PYTHON version: 3.11.5
     .pip_install(
-        "accelerate",               # local 'accelerate':   0.24.1
-        "diffusers[torch]>=0.15.1",  # local 'diffusers':    0.23.0
-        "ftfy",                     # local 'ftfy':         6.1.1
-        "torchvision",              # local 'torchvision':  0.16.0
-        "transformers~=4.25.1",     # local 'transformers': 4.35.0
-        "triton",                   # local 'triton':       2.1.0
-        "safetensors",              # local 'safetensors':  0.4.0
+        "accelerate",               # local 'accelerate':       0.24.1
+        "diffusers[torch]>=0.15.1", # local 'diffusers':       0.23.0
+        "ftfy",                     # local 'ftfy':             6.1.1
+        "torchvision",              # local 'torchvision':      0.16.0
+        "transformers~=4.25.1",     # local 'transformers':     4.35.0
+        "triton",                   # local 'triton':           2.1.0
+        "safetensors",              # local 'safetensors':      0.4.0
     )
     .pip_install(
         "torch==2.0.1+cu117",
