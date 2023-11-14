@@ -5,12 +5,13 @@ from pathlib import Path
 
 def gen_image_name(key: str, file_extension: str) -> str:
     # Get the current timestamp in a human-readable format
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H:%M:%S")
 
     # Combine the timestamp with the key and generate a unique hash
     # (we don't need a strong hash func. here - sha1 is enough)
-    unique_hash = hashlib.sha1(f"{timestamp}_{key}".encode()).hexdigest()
-    return f"{timestamp}_{unique_hash}.{file_extension}"
+    hash = hashlib.sha1(f"{timestamp}_{key}".encode()).hexdigest()
+    shortened = hash[:10]
+    return f"{timestamp}_{shortened}.{file_extension}"
 
 
 def prep_image_dir(subdir: str) -> Path:
