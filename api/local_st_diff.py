@@ -52,7 +52,7 @@ pipe = get_pipeline(
 )
 
 assert pipe is not None, \
-    f"Pipeline object not set or failed to initialize"
+    f"Pipeline object not set or failed initialization"
 
 pipe.to(_DEVICE)
 
