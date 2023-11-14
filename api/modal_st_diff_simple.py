@@ -115,28 +115,37 @@ class StableDiffusion:
         return image_output
 
 
-# This is the command we'll use to generate images. It takes a `prompt`,
-# `samples` (the number of images you want to generate), `steps` which
-# configures the number of inference steps the model will make, and `batch_size`
-# which determines how many images to generate for a given prompt.
-
-
 @stub.local_entrypoint()
 def entrypoint(
     prompt: str,
     samples: int = 5,
     steps: int = 10,
     batch_size: int = 1,
-    folder_name: str = "st_diff-modal_simple"
+    folder_name: str = "modal_st_diff_simple"
 ):
+    """
+    This is the command we'll use to generate images. It takes a `prompt`,
+    `samples` (the number of images you want to generate), `steps` which
+    configures the number of inference steps the model will make, and `batch_size`
+    which determines how many images to generate for a given prompt.
+    """
+
+    # by default folder would be created inside UNIX `/tmp` dir
+    path_prefix = f"/tmp/{folder_name}"
+
+    # show generation parameters
     print(
-        f"prompt => {prompt}, steps => {steps}, samples => {samples}, batch_size => {batch_size}"
+        f"prompt => '{prompt}', steps => {steps}, "
+        f"samples => {samples}, batch_size => {batch_size}"
     )
 
-    dir = Path(f"/tmp/{folder_name}")
+    # create specified directory if not present
+    dir = Path(path_prefix)
     if not dir.exists():
         dir.mkdir(exist_ok=True, parents=True)
-        print(f"Saving to: /tmp/{folder_name}")
+
+    # show path where generated images would be saved
+    print("Images would be saved to:", dir)
 
     sd = StableDiffusion()
     for i in range(samples):
