@@ -60,7 +60,7 @@ pipe.to(_DEVICE)
 @app.get("/")
 def generate(prompt: str):
     with autocast(_DEVICE):
-        image = pipe(prompt, guidance_scale=8.5).images[0]
+        image = pipe(prompt, guidance_scale=8.5, height=768, width=768).images[0]
 
         filename = gen_image_name(
             key="local_st_diff",
