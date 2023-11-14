@@ -7,5 +7,6 @@ def gen_image_name(key: str, file_extension: str) -> str:
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     # Combine the timestamp with the key and generate a unique hash
-    unique_hash = hashlib.sha256(f"{timestamp}_{key}".encode()).hexdigest()
+    # (we don't need a strong hash func. here - sha1 is enough)
+    unique_hash = hashlib.sha1(f"{timestamp}_{key}".encode()).hexdigest()
     return f"{timestamp}_{unique_hash}.{file_extension}"
