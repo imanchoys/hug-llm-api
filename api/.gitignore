@@ -6,3 +6,6 @@ rag_data/
 
 # [warning] HEAVY models stored here:
 models_dir/
+
+# ignore artifacts from modal.com saved in this dir:
+modal_results/
