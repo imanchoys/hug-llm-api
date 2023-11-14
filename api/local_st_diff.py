@@ -61,7 +61,14 @@ pipe.to(_DEVICE)
 def generate(prompt: str):
     with autocast(_DEVICE):
         image = pipe(prompt, guidance_scale=8.5).images[0]
-        image.save(gen_image_name(key="local_st_diff", file_extension="png"))
+
+        filename = gen_image_name(
+            key="local_st_diff",
+            file_extension="png"
+        )
+
+        image.save(filename)
+
         buffer = BytesIO()
         image.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue())
