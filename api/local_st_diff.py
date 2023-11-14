@@ -1,6 +1,6 @@
 import base64
 import torch
-from utils import get_image_name
+from utils import gen_image_name
 from torch import autocast
 from diffusers import StableDiffusionPipeline
 # the line below is for the sake if type annotation of pipeline
@@ -61,7 +61,7 @@ pipe.to(_DEVICE)
 def generate(prompt: str):
     with autocast(_DEVICE):
         image = pipe(prompt, guidance_scale=8.5).images[0]
-        image.save(get_image_name(key="user0", file_extension="png"))
+        image.save(gen_image_name(key="local_st_diff", file_extension="png"))
         buffer = BytesIO()
         image.save(buffer, format="PNG")
         img_str = base64.b64encode(buffer.getvalue())
