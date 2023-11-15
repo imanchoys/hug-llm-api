@@ -1,8 +1,7 @@
-from typing import Any, Generator
-from ctransformers import AutoModelForCausalLM, LLM
+from typing import Generator
 from pprint import pformat
-# from rich.pretty import pretty_repr
-from loguru import logger
+
+from ctransformers import AutoModelForCausalLM, LLM
 
 # Set gpu_layers to the number of layers to offload to GPU.
 # Set to 0 if no GPU acceleration is available on your system.
@@ -10,7 +9,7 @@ llm = AutoModelForCausalLM.from_pretrained(
     "IlyaGusev/saiga_mistral_7b_gguf",
     model_file="model-q4_K.gguf",
     model_type="llama",
-    gpu_layers=50
+    gpu_layers=100,
     # gpu_layers=100
 )
 
@@ -27,28 +26,50 @@ ROLE_TOKENS = {
     "system": SYSTEM_TOKEN
 }
 
-def get_message_token(
+
+def inject_role(
     llm: LLM,
-    role_id: str = "system",
-    content: str = SYSTEM_PROMPT
-) -> str:
+    role_str: str,
+    content: str
+) -> list[int]:
     msg_tokens = llm.tokenize(content)
-    msg_tokens.insert(1, ROLE_TOKENS[role_id])
+    msg_tokens.insert(1, ROLE_TOKENS[role_str])
     msg_tokens.insert(2, LINE_BREAK_TOKEN)
     msg_tokens.append(llm.eos_token_id)
     return msg_tokens
 
 
-def detokenize_results(
+def add_setup_tokens(llm: LLM) -> None:
+    # - get system tokens
+    setup_tokens = inject_role(llm, "system", SYSTEM_PROMPT)
+    # - for now tokens only contains setup (aka "system") tokens
+    # - give these tokens to the model
+    # (basically specific setup prompt tokenized by model)
+    llm.eval(setup_tokens)
+
+
+def prepare_prompt_tokens(llm: LLM, prompt: str) -> list[int]:
+    prompt_tokenized = inject_role(llm, "user", prompt)
+    # inject more specific tokens AGAIN
+    return prompt_tokenized + [
+        llm.bos_token_id,
+        BOT_TOKEN,
+        LINE_BREAK_TOKEN
+    ]
+
+
+def detokenize_generated(
     llm: LLM,
-    tokens: list[int],
-    generator: Generator[int, None, None]
+    generator: Generator[int, None, None],
+    token_queue: list[int]
 ) -> list[str]:
     res = []
     for token in generator:
-        token_str = llm.detokenize(tokens=[token], decode=True)
-
-        tokens.append(token)
+        token_str = llm.detokenize(
+            tokens=[token],
+            decode=True
+        )
+        token_queue.append(token)
         if llm.is_eos_token(token):
             break
         res.append(token_str)
@@ -60,38 +81,26 @@ def run(
     model: LLM,
     prompt: str,
     tokens: list[int],
-    print_tokens: bool = True
+    logging_on: bool = True
 ):
-    # save system tokens to session
-    sys_tokens = get_message_token(model)
-    # for now tokens is equal to system tokens
-    # so we save them as well
-    tokens = sys_tokens
-    # give the system tokens to model
-    model.eval(tokens)
+    # add tokenized initial "system" prompt
+    # - which is specific for this model
+    add_setup_tokens(model)
+    tokens += prepare_prompt_tokens(model, prompt)
 
-    message_tokens = get_message_token(
-        llm=model,
-        role_id="user",
-        content=prompt
-    )
+    if logging_on:
+        # pformat is a method that formats python object beautifully
+        # (it's a part of built-in pprint module, so no dependencies here)
+        print(
+            "Tokens (including user prompt + role tokens)",
+            pformat(tokens)
+        )
 
-    # tokenization step
-    role_tokens = [
-        model.bos_token_id,
-        BOT_TOKEN,
-        LINE_BREAK_TOKEN
-    ]
-
-    tokens += message_tokens + role_tokens
-    if print_tokens:
-        # logger.info(pretty_repr(tokens))
-        logger.info(pformat(tokens))
-
-    full_prompt = model.detokenize(tokens)
-    if print_tokens:
-        # logger.info(pretty_repr(model.tokenize(full_prompt)))
-        logger.info(pformat(model.tokenize(full_prompt)))
+    if logging_on:
+        print(
+            "Full PROMPT is:",
+            model.detokenize(tokens, decode="utf-8")
+        )
 
     # generation step = actual use of LLM
     generator = model.generate(
@@ -102,23 +111,13 @@ def run(
         repetition_penalty=1.1
     )
 
-    res = detokenize_results(
-        model,
-        tokens,
-        generator
-    )
+    answer = "".join(detokenize_generated(model, generator, tokens))
+    if logging_on:
+        print("Results:\n", answer)
 
-    # a) pretty_repr is a part of rich package (python -m pip install rich)
-    # logger.info(pretty_repr(res))
-
-    # b) pformat is a method that formats python object beautifully
-    # (it's a part of built-in pprint module, so no dependencies here)
-    logger.info(pformat(res))
-
-    answer = "".join(res)
     return {
-        "prompt": prompt,
-        "result": answer,
+        "user_prompt": prompt,
+        "llm_answer": answer,
     }
 
 
