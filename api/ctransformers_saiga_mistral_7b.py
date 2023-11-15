@@ -3,16 +3,6 @@ from pprint import pformat
 
 from ctransformers import AutoModelForCausalLM, LLM
 
-# Set gpu_layers to the number of layers to offload to GPU.
-# Set to 0 if no GPU acceleration is available on your system.
-llm = AutoModelForCausalLM.from_pretrained(
-    "IlyaGusev/saiga_mistral_7b_gguf",
-    model_file="model-q4_K.gguf",
-    model_type="llama",
-    gpu_layers=100,
-    # gpu_layers=100
-)
-
 # Saiga-Mistral-7b specific format tokens
 SYSTEM_PROMPT = "Ты — Сайга, русскоязычный автоматический ассистент. Ты разговариваешь с людьми и помогаешь им."
 SYSTEM_TOKEN = 1587
@@ -46,6 +36,7 @@ def add_setup_tokens(llm: LLM) -> None:
     # - give these tokens to the model
     # (basically specific setup prompt tokenized by model)
     llm.eval(setup_tokens)
+    print("System prompt evaluated")
 
 
 def prepare_prompt_tokens(llm: LLM, prompt: str) -> list[int]:
@@ -77,17 +68,13 @@ def detokenize_generated(
     return res
 
 
-def run(
+def run_prompt(
     model: LLM,
     prompt: str,
     tokens: list[int],
     logging_on: bool = True
 ):
-    # add tokenized initial "system" prompt
-    # - which is specific for this model
-    add_setup_tokens(model)
     tokens += prepare_prompt_tokens(model, prompt)
-
     if logging_on:
         # pformat is a method that formats python object beautifully
         # (it's a part of built-in pprint module, so no dependencies here)
@@ -111,18 +98,35 @@ def run(
         repetition_penalty=1.1
     )
 
-    answer = "".join(detokenize_generated(model, generator, tokens))
-    if logging_on:
-        print("Results:\n", answer)
-
+    res = "".join(detokenize_generated(model, generator, tokens))
     return {
         "user_prompt": prompt,
-        "llm_answer": answer,
+        "llm_response": res,
     }
 
 
-print(run(
-    model=llm,
-    prompt="Почему трава зелёная",
-    tokens=[]
-))
+if __name__ == "__main__":
+    # Set gpu_layers to the number of layers to offload to GPU.
+    # Set to 0 if no GPU acceleration is available on your system.
+    llm = AutoModelForCausalLM.from_pretrained(
+        "IlyaGusev/saiga_mistral_7b_gguf",
+        model_file="model-q4_K.gguf",
+        model_type="llama",
+        gpu_layers=100,
+        # gpu_layers=100
+    )
+
+    # add tokenized initial "system" prompt
+    # - which is specific for this model
+    add_setup_tokens(llm)
+
+    prompts = [
+        "Кто ты?",
+        "Почему трава зелёная",
+        "Разве тебя зовут не Сайга?",
+        "Do you speak English?"
+    ]
+
+    for prompt in prompts:
+        resp = run_prompt(llm, prompt, tokens=[])
+        print("Answer", resp["llm_response"])
