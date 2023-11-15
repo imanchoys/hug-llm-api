@@ -84,10 +84,7 @@ def run_prompt(
         )
 
     if logging_on:
-        print(
-            "Full PROMPT is:",
-            model.detokenize(tokens, decode="utf-8")
-        )
+        print("Full PROMPT is:", model.detokenize(tokens, decode="utf-8"))
 
     # generation step = actual use of LLM
     generator = model.generate(
@@ -123,10 +120,12 @@ if __name__ == "__main__":
     prompts = [
         "Кто ты?",
         "Почему трава зелёная",
-        "Разве тебя зовут не Сайга?",
+        "Что я спросил у тебя до этого",
         "Do you speak English?"
     ]
 
+    tokens = []
+
     for prompt in prompts:
-        resp = run_prompt(llm, prompt, tokens=[])
+        resp = run_prompt(llm, prompt, tokens)
         print("Answer", resp["llm_response"])
