@@ -1,6 +1,7 @@
 from typing import Any, Generator
 from ctransformers import AutoModelForCausalLM, LLM
-from rich.pretty import pretty_repr
+from pprint import pformat
+# from rich.pretty import pretty_repr
 from loguru import logger
 
 # Set gpu_layers to the number of layers to offload to GPU.
@@ -26,22 +27,11 @@ ROLE_TOKENS = {
     "system": SYSTEM_TOKEN
 }
 
-
-def pretty_log(obj: Any, debug: bool = False) -> None:
-    msg = pretty_repr(obj)
-    if debug:
-        logger.debug(msg)
-        return
-
-    logger.info(msg)
-
-
 def get_message_token(
     llm: LLM,
     role_id: str = "system",
     content: str = SYSTEM_PROMPT
 ) -> str:
-    # TODO: customize "system tokens" creation
     msg_tokens = llm.tokenize(content)
     msg_tokens.insert(1, ROLE_TOKENS[role_id])
     msg_tokens.insert(2, LINE_BREAK_TOKEN)
@@ -95,11 +85,13 @@ def run(
 
     tokens += message_tokens + role_tokens
     if print_tokens:
-        logger.info(pretty_repr(tokens))
+        # logger.info(pretty_repr(tokens))
+        logger.info(pformat(tokens))
 
     full_prompt = model.detokenize(tokens)
     if print_tokens:
-        logger.info(pretty_repr(model.tokenize(full_prompt)))
+        # logger.info(pretty_repr(model.tokenize(full_prompt)))
+        logger.info(pformat(model.tokenize(full_prompt)))
 
     # generation step = actual use of LLM
     generator = model.generate(
@@ -116,7 +108,12 @@ def run(
         generator
     )
 
-    logger.info(pretty_repr(res))
+    # a) pretty_repr is a part of rich package (python -m pip install rich)
+    # logger.info(pretty_repr(res))
+
+    # b) pformat is a method that formats python object beautifully
+    # (it's a part of built-in pprint module, so no dependencies here)
+    logger.info(pformat(res))
 
     answer = "".join(res)
     return {
@@ -125,5 +122,8 @@ def run(
     }
 
 
-# answer = llm("AI is going to")
-print(run(model=llm, prompt="Почему трава зелёная", tokens=[]))
+print(run(
+    model=llm,
+    prompt="Почему трава зелёная",
+    tokens=[]
+))
