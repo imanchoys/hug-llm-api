@@ -58,7 +58,7 @@ def make_image(
         prior_guidance_scale=prior_guidance_scale,
         height=height,
         width=width
-    ).images[0]
+    ).images
 
     # TODO: Remove this debug print
     print("[DEBUG] IMGAES types is:", type(pipe), "len is:", len(images))
