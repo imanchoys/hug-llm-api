@@ -1,19 +1,26 @@
-from fastapi.responses import JSONResponse
+from typing import Any
 from llama_cpp import Llama
+from rich.pretty import pretty_repr
+from loguru import logger
+
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException
 from utils_saiga_mistral_gguf import (
     get_system_tokens,
     get_message_tokens,
+    detokenize_results,
     BOT_TOKEN,
     LINE_BREAK_TOKEN
 )
 
 # This demo works with llama.cpp python bindings >= 0.1.79 - it expects model GGUF format:
 #   - to install: `pip install llama-cpp-python`
-MODEL_VAR = "model-q4_K.gguf"
-MODEL_URL = f"https://huggingface.co/IlyaGusev/saiga_mistral_7b_gguf/resolve/main/{MODEL_VAR}"
-MODEL_DIR = "model_dir"
+model_config = {
+    "model_variant":    "model-q4_K.gguf",
+    "model_dir":        "model_dir",
+    "gguf_path":        "./models_dir/saiga_mistral_7b/model-q4_K.gguf",
+    "model_url":        "https://huggingface.co/IlyaGusev/saiga_mistral_7b_gguf/resolve/main/model-q4_K.gguf"
+}
 
 # path for .gguf model file (could be either run on CPUs or GPUs)
 PATH_TO_GGUF = "./models_dir/saiga_mistral_7b/model-q4_K.gguf"
@@ -27,6 +34,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+def pretty_log(obj: Any, debug: bool = False) -> None:
+    msg = pretty_repr(obj)
+    if debug:
+        logger.debug(msg)
+        return
+
+    logger.info(msg)
+
 
 # Define a class to hold the conversation state
 class ConversationSession:
@@ -48,7 +65,7 @@ def start_session(session_id: str):
 
 
 # Endpoint to generate a response for a given session and prompt
-@app.post("/generate/{session_id}")
+@app.get("/generate/{session_id}")
 def generate(
     session_id: str,
     prompt: str,
@@ -67,7 +84,7 @@ def generate(
     session = sessions[session_id]
     if session.model is None:
         session.model = Llama(
-            PATH_TO_GGUF,
+            model_config["gguf_path"],
             n_ctx=2000,
             n_parts=1,
         )
@@ -80,8 +97,8 @@ def generate(
         session.tokens = sys_tokens
         # give the system tokens to model
         session.model.eval(session.tokens)
+        logger.info("model class created")
 
-    res = []
     # create tokens compatible with this model
     # (just manually inserting a few constants defined earlier, like:
     # USER_TOKEN, BOT_TOKEN, SYSTEM_TOKEN, SYSTEM_PROMPT)
@@ -100,13 +117,19 @@ def generate(
 
     session.tokens += message_tokens + role_tokens
     if print_tokens:
-        print(session.tokens)
+        pretty_log(
+            session.tokens,
+            debug=True
+        )
 
     full_prompt = session.model.detokenize(session.tokens)
     if print_tokens:
-        print(session.model.tokenize(full_prompt))
+        pretty_log(
+            session.model.tokenize(full_prompt),
+            debug=True
+        )
 
-    # generation step = actual use LLM
+    # generation step = actual use of LLM
     generator = session.model.generate(
         session.tokens,
         top_k=top_k,
@@ -115,21 +138,16 @@ def generate(
         repeat_penalty=repeat_penalty
     )
 
-    print("Generation finished")
+    res = detokenize_results(
+        session.model,
+        session.tokens,
+        generator
+    )
 
-    for token in generator:
-        token_str = session.model.detokenize([token]).decode(
-            "utf-8",
-            errors="ignore"
-        )
-
-        session.tokens.append(token)
-        if token == session.model.token_eos():
-            break
-        res.append(token_str)
+    pretty_log(res, debug=True)
 
     return {
         "prompt": prompt,
         "result": "".join(res),
-        "model": MODEL_URL
+        "model": model_config["model_url"]
     }
