@@ -1,8 +1,10 @@
 from pathlib import Path
-from typing import Any
 
 from modal import Image, Stub, gpu, method
-# from modal import Mount, asgi_app
+from modal import Mount, asgi_app
+
+# TODO: Improve set up for Kandinsky 2.2 model
+# example: https://colab.research.google.com/drive/1MfN9dfmejT8NjXhR353NeP5RzbruHgo7?usp=sharing#scrollTo=lx6QEDLd7ZDz
 
 
 def download_via_AutoPipeline():
@@ -18,7 +20,7 @@ def download_via_AutoPipeline():
         torch_dtype=torch.float16
     )
     pipe_path = pipe.download("kandinsky-community/kandinsky-2-2-decoder")
-    logger.info(f"Model downloaded: {pipe_path}")
+    logger.info(f"Model downloaded successfully: {pipe_path}")
 
 
 image = (
@@ -41,14 +43,15 @@ image = (
     .run_function(download_via_AutoPipeline)
 )
 
+# TODO: explore how to manage imports properly
+# with image.run_inside():
+#     from loguru import logger
 
 stub = Stub(
     "kandinsky-2.2-test-01",
     image=image
 )
 
-if stub.is_inside():
-    from loguru import logger
 
 @stub.cls(gpu=gpu.A10G(), container_idle_timeout=240)
 class Model:
@@ -60,11 +63,11 @@ class Model:
             DiffusionPipeline,
             KandinskyV22CombinedPipeline
         )
-        
+
         # this model need GPU and CUDA
         if not torch.cuda.is_available():
             raise RuntimeError("Could not run this model without CUDA")
-        
+
         options = dict(
             torch_dtype=torch.float16
         )
@@ -74,7 +77,7 @@ class Model:
             "kandinsky-community/kandinsky-2-2-decoder",
             **options
         )
-        
+
         self.kandinsky_pipe.to("cuda")
         logger.debug("Pipeline initialized")
 
@@ -82,7 +85,7 @@ class Model:
     def inference(
         self,
         prompt: str,
-        negative_prompt: str,
+        negative_prompt: str = "low quality, bad quality",
         prior_guidance_scale: float = 1.0,
         height: int = 512,
         width: int = 512,
@@ -90,8 +93,6 @@ class Model:
         num_images_per_prompt: int = 1
     ) -> bytes:
         from loguru import logger
-        # TODO: Remove this debug print
-        # <class 'diffusers.pipelines.kandinsky2_2.pipeline_kandinsky2_2_combined.KandinskyV22CombinedPipeline'>
         logger.debug(f"Pipe type is: {type(self.kandinsky_pipe)}")
 
         images = self.kandinsky_pipe(
@@ -104,16 +105,12 @@ class Model:
             num_images_per_prompt=num_images_per_prompt
         ).images
 
-        # TODO: Remove this debug print
         logger.debug(
             f"Images type is: {type(images)}"
             f" length is: {len(images)}"
         )
 
         img = images[0]
-
-        # TODO: Remove this debug print
-        # 'PIL.Image.Image'
         logger.debug(f"Single image has type: {type(img)}")
 
         import io
@@ -138,3 +135,43 @@ def main(prompt: str):
     logger.info(f"Saving it to {output_path}")
     with open(output_path, "wb") as f:
         f.write(image_bytes)
+
+
+frontend_path = Path(__file__).parent / "frontend"
+
+
+@stub.function(
+    mounts=[Mount.from_local_dir(frontend_path, remote_path="/assets")],
+    allow_concurrent_inputs=20,
+)
+@asgi_app()
+def app():
+    import fastapi.staticfiles
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    from loguru import logger
+    
+    web_app = FastAPI()
+    web_app.add_middleware(
+        CORSMiddleware,
+        allow_credentials=True,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+
+    logger.debug("Middleware added!")
+
+    @web_app.get("/infer/{prompt}")
+    async def infer(prompt: str):
+        from fastapi.responses import Response
+
+        image_bytes = Model().inference.remote(prompt)
+
+        return Response(image_bytes, media_type="image/png")
+
+    web_app.mount(
+        "/", fastapi.staticfiles.StaticFiles(directory="/assets", html=True)
+    )
+
+    return web_app
