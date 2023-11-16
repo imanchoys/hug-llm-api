@@ -1,13 +1,13 @@
 import base64
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from PIL import Image
 
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 import torch
-from diffusers import AutoPipelineForText2Image
+from diffusers import AutoPipelineForText2Image, DiffusionPipeline
 from utils import gen_image_name, prep_image_dir
 
 _DEFAULT_MODEL = "kandinsky-community/kandinsky-2-2-decoder"
@@ -20,7 +20,7 @@ if not torch.cuda.is_available():
     raise RuntimeError("Could not run this model without CUDA")
 
 # set up the pipeline for Kandinsky 2.2
-pipe = AutoPipelineForText2Image.from_pretrained(
+pipe: DiffusionPipeline = AutoPipelineForText2Image.from_pretrained(
     _DEFAULT_MODEL,
     torch_dtype=torch.float16
 )
@@ -48,26 +48,29 @@ def make_image(
     prior_guidance_scale: float = 1.0,
     height: int = 512,
     width: int = 512
-) -> Any:
+) -> Image.Image:
     # TODO: Remove this debug print
-    print("[DEBUG] Pipe types is:", type(pipe))
+    # <class 'diffusers.pipelines.kandinsky2_2.pipeline_kandinsky2_2_combined.KandinskyV22CombinedPipeline'>
+    print("[DEBUG] Pipe type is:", type(pipe))
 
     images = pipe(
         prompt=prompt,
         negative_prompt=negative_prompt,
         prior_guidance_scale=prior_guidance_scale,
         height=height,
-        width=width
+        width=width,
+        num_inference_steps=25
     ).images
 
     # TODO: Remove this debug print
-    print("[DEBUG] IMGAES types is:", type(pipe), "len is:", len(images))
-    image = images[0]
+    print("[DEBUG] Images object has type:", type(pipe), "len is:", len(images))
+    img = images[0]
 
     # TODO: Remove this debug print
-    print("[DEBUG] Image types is:", type(image))
+    # 'PIL.Image.Image'
+    print("[DEBUG] Single image has type:", type(img))
 
-    return image
+    return img
 
 
 @app.get("/")
@@ -80,7 +83,7 @@ def generate(
     save_to_fs: bool = True
 ):
     # generate image
-    image = make_image(
+    image: Image.Image = make_image(
         prompt,
         neg_prompt,
         prior_guidance_scale=guidance_scale,
