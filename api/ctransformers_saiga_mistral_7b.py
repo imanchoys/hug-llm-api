@@ -2,6 +2,7 @@ from typing import Generator
 from pprint import pformat
 
 from ctransformers import AutoModelForCausalLM, LLM
+from huggingface_hub import hf_hub_download
 
 # Saiga-Mistral-7b specific format tokens
 SYSTEM_PROMPT = "Ты — Сайга, русскоязычный автоматический ассистент. Ты разговариваешь с людьми и помогаешь им."
@@ -103,13 +104,22 @@ def run_prompt(
 
 
 if __name__ == "__main__":
+    print("Downloading model if do not exist in FS cache")
+    hf_hub_download(
+        "IlyaGusev/saiga_mistral_7b_gguf",
+        "model-q4_K.gguf",
+        repo_type="model"
+    )
+    
+    print("HF Hub download finished!")
     # Set gpu_layers to the number of layers to offload to GPU.
     # Set to 0 if no GPU acceleration is available on your system.
     llm = AutoModelForCausalLM.from_pretrained(
         "IlyaGusev/saiga_mistral_7b_gguf",
         model_file="model-q4_K.gguf",
         model_type="llama",
-        gpu_layers=100,
+        gpu_layers=50,
+        local_files_only=True
         # gpu_layers=100
     )
 
