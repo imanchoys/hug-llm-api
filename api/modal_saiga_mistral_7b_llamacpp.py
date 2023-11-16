@@ -83,8 +83,9 @@ def detokenize_generated(
     res = ""
     # TODO: maybe optimize it?
     for token in generator:
-        token_str = model.detokenize([token]
-                                     ).decode(
+        token_str = model.detokenize(
+            [token]
+        ).decode(
             encoding="utf-8",
             errors="ignore"
         )
