@@ -53,7 +53,7 @@ stub = Stub(
 )
 
 
-@stub.cls(gpu=gpu.T4, container_idle_timeout=240)
+@stub.cls(gpu=gpu.T4(), container_idle_timeout=240)
 class Model:
     def __enter__(self):
         self.tokenizer = MBartTokenizer.from_pretrained(
