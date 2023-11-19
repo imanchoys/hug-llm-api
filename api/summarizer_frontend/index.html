@@ -144,11 +144,11 @@
                 (text) => {
                   item.completion += text;
                   item.markdownCompletion = marked.parse(item.completion, {mangle: false, headerIds: false});
+                  item.loading = false;
                   // Hacky way to notify element to update
                   this.items = this.items.map((i) =>
                     i.id === item.id ? { ...item } : i,
                   );
-                  item.loading = false;
                 }
               ).catch(
                 (error) => {
