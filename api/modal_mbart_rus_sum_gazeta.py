@@ -95,7 +95,7 @@ def main(text: str = None):
     logger.success(summary)
 
 
-frontend_path = Path(__file__).parent / "summarizer_frontend"
+frontend_path = Path(__file__).parent / "summarizer_frontend_ui"
 
 
 @stub.function(
