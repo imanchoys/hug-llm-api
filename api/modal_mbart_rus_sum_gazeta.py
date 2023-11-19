@@ -48,12 +48,12 @@ with image.run_inside():
     )
 
 stub = Stub(
-    "mbart-gazeta-test-01",
+    "mbart-gazeta-test-02",
     image=image
 )
 
 
-@stub.cls(gpu=gpu.A10G(), container_idle_timeout=240)
+@stub.cls(gpu=gpu.T4, container_idle_timeout=240)
 class Model:
     def __enter__(self):
         self.tokenizer = MBartTokenizer.from_pretrained(
@@ -69,7 +69,7 @@ class Model:
         input_ids = self.tokenizer(
             [input_text],
             # максимальная длинна текста на выходе
-            max_length=600,
+            max_length=1024,
             padding="max_length",
             truncation=True,
             return_tensors="pt",
