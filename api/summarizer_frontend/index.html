@@ -1,0 +1,165 @@
+<html>
+  <head>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/5.1.2/marked.min.js"></script>
+    <link href="https://unpkg.com/@tailwindcss/typography@0.4.1/dist/typography.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Суммаризация mbart-ru-gazeta | </title>
+  </head>
+  <body>
+    <section x-data="state()" class="max-w-2xl mx-auto pt-16 px-4">
+      <div class="text-xs font-semibold tracking-wide uppercase text-center text-white">
+        <a
+          href="https://modal.com"
+          class="inline-flex gap-x-1 items-center bg-lime-400 py-0.5 px-3 rounded-full hover:text-lime-400 hover:ring hover:ring-lime-400 hover:bg-white focus:outline-neutral-400"
+          target="_blank"
+        >
+          powered by Modal
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4 animate-pulse -mr-1"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-chevrons-right"
+          >
+            <path d="m6 17 5-5-5-5" />
+            <path d="m13 17 5-5-5-5" />
+          </svg>
+        </a>
+      </div>
+      <div class="text-4xl mt-4 mb-4 font-semibold tracking-tighter text-center">
+        Суммаризация текста на русском
+      </div>
+
+      <form class="relative">
+        <input
+          x-model="nextPrompt"
+          type="text"
+          placeholder="Ask something ..."
+          class="flex grow w-full h-10 pl-4 pr-12 py-2 text-md bg-white border rounded-3xl border-neutral-300 ring-offset-background placeholder:text-neutral-500 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+          @keydown.window.prevent.ctrl.k="$el.focus()"
+          @keydown.window.prevent.cmd.k="$el.focus()"
+          autofocus
+        />
+        <div class="absolute top-0 right-0 flex items-center h-full pr-[0.3125rem]">
+          <button
+            @click.prevent="callApi()"
+            class="rounded-full bg-lime-400 p-2 focus:border-neutral-300 focus:outline-neutral-400"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-plus"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+          </button>
+        </div>
+      </form>
+
+      <div class="flex flex-col gap-y-4 my-8">
+        <template x-for="(item, index) in [...items].reverse()" :key="index">
+          <div class="w-full border px-4 py-2 rounded-3xl">
+            <div
+              x-data
+              class="text-sm mt-2 mb-4 whitespace-pre-line"
+              x-text="item.prompt"
+              :class="{'animate-pulse': item.loading}"
+            ></div>
+            <div
+              x-show="item.completion.length === 0"
+              class="h-4 w-2 mt-2 mb-4 bg-neutral-500 animate-pulse"
+            ></div>
+            <div
+              class="text-sm mt-2 mb-4 text-neutral-500 w-full prose max-w-none prose-neutral-100 leading-6"
+              x-show="item.completion.length > 0"
+              x-html="item.markdownCompletion"
+            >
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <script>
+        async function summarize(prompt) {
+          const res = await 
+          console.log(await res.json());
+          return res;
+        }
+
+        function state() {
+          return {
+            nextPrompt: "",
+            items: [],
+            info: { backlog: 0, num_total_runners: 0 },
+            callApi() {
+              console.log(this.nextPrompt);
+              if (!this.nextPrompt) return;
+
+              let item = {
+                id: Math.random(),
+                prompt: this.nextPrompt,
+                completion: "",
+                loading: true,
+                markdownCompletion: "",
+              };
+              this.nextPrompt = "";
+              this.items.push(item);
+
+              // fetch summarization API
+              fetch(`/summary/${encodeURIComponent(item.prompt)}`)
+              .then(
+                // success 
+                (response) => {
+                  console.log(`${item.id} succeeded`);
+                  return response.text();
+                },
+                
+                // error
+                (response) => {
+                  item.loading = false;
+                  console.error(
+                    "status: ", response.status,
+                    "details: ", response.statusText
+                  );
+                  return Promise.resolve("Error fetching API");
+                }
+              ).then(
+                (text) => {
+                  item.completion += text;
+                  item.markdownCompletion = marked.parse(item.completion, {mangle: false, headerIds: false});
+                  // Hacky way to notify element to update
+                  this.items = this.items.map((i) =>
+                    i.id === item.id ? { ...item } : i,
+                  );
+                  item.loading = false;
+                }
+              ).catch(
+                (error) => {
+                  item.loading = false;
+                  console.log("Unexpected error:", error)
+                }
+              )
+            },
+          };
+        }
+      </script>
+    </section>
+  </body>
+</html>
