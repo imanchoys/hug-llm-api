@@ -5,7 +5,15 @@ description = ""
 authors = [
     {name = "Victor Khovanov", email = "victorkhovtko@gmail.com"},
 ]
-dependencies = []
+dependencies = [
+    "streamlit>=1.27.1",
+    "pypdf2>=3.0.1",
+    "langchain>=0.0.305",
+    "python-dotenv>=1.0.0",
+    "faiss-cpu>=1.7.4",
+    "openai>=0.28.1",
+    "huggingface-hub>=0.17.3",
+]
 requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "MIT"}
